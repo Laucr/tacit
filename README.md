@@ -4,7 +4,7 @@ A comprehensive toolkit of AI-powered skills for development, analysis, and oper
 
 ## Overview
 
-This repository contains **16 independent skills** designed to streamline software development workflows.
+This repository contains **17 independent skills** designed to streamline software development workflows.
 
 ### Onboarding & Maintenance
 - **[warmup](./warmup/SKILL.md)** — Codebase onboarding. Explore repo structure, extract Go conventions, and distill them into a Claude-compatible development rule file.
@@ -20,6 +20,7 @@ This repository contains **16 independent skills** designed to streamline softwa
 ### Verification
 - **[bailiff](./bailiff/SKILL.md)** — Spec-driven verification with contract-level testing. Validates implementations against specifications and runs Go code quality checks.
 - **[plumb](./plumb/SKILL.md)** — Compare versions on PRD / plan / build / bailiff artifacts and report which features have stale plans, builds, or verdicts. Read-only sensor — never modifies files. Auto-invoked by builder and bailiff as a pre-flight check.
+- **[smoke-client](./smoke-client/SKILL.md)** — Scaffold a standalone Go smoke-test client for one in-process function or live HTTP endpoint. Replays JSONL inputs without booting the surrounding service and writes stable parsed, results, skipped, and failures JSONL artifacts; dry-run mode performs decoding only and makes no network calls.
 - **[inquest](./inquest/SKILL.md)** — Post-verdict / post-deploy investigation with two modes: **smoke** (three-way diff PRD ↔ code ↔ smoke, diagnose whether the failure is a code bug, spec gap, spec-stale, or environment issue) and **triage** (walk a bailiff report's findings, independently verify each, fix the real ones in place — scoped to files the finding names — and flip the bailiff report's status to reflect what actually happened). Never invokes other skills.
 
 ### After-action retrospective
@@ -69,6 +70,9 @@ When the spec moves while implementation is in flight:
 When the real world disagrees with the spec, or bailiff leaves open findings:
 
 ```
+*. smoke-client → Scaffold a JSONL-driven harness for one function or HTTP
+                  endpoint; dry-run validates inputs, online runs produce
+                  parsed/results/skipped/failures evidence.
 *. inquest      → smoke mode: three-way diff (PRD says ↔ code does ↔ smoke saw)
                   → diagnose code-bug vs spec-stale vs spec-gap vs environment.
                   triage mode: verify each bailiff finding, fix the real ones in
@@ -208,7 +212,7 @@ Constraints every new skill must follow if it needs to **persist anything in the
 6. **Document the path.** Every skill that persists config must mention the exact path in its `SKILL.md` Setup section, and the README's "Configuration / Currently registered" list must be updated in the same change.
 7. **No secrets in the config file.** Tokens, passwords, API keys, etc. belong in env vars (or a user-managed `auth.env_file` reference); the YAML/JSON in `~/.config/tacit-skills/` should be safe to back up to a personal git repo without leaking credentials.
 
-A skill that does not need to persist anything (most of them — `pivot`, `bailiff`, `blueprint`, `builder`, `charter`, `code-analyze`, `distill`, `inquest`, `json-to-schema`, `plumb`, `scout`, `warmup`) should not create any file under `~/.config/tacit-skills/`. Stay stateless when you can.
+A skill that does not need to persist anything (most of them — `pivot`, `bailiff`, `blueprint`, `builder`, `charter`, `code-analyze`, `distill`, `inquest`, `json-to-schema`, `plumb`, `scout`, `smoke-client`, `warmup`) should not create any file under `~/.config/tacit-skills/`. Stay stateless when you can.
 
 ## Repository layout
 

@@ -103,7 +103,40 @@ Triggered when requirements move while implementation is in flight. Without this
 
 ---
 
-## 4. Incident route — inquest (post-deploy)
+## 4. Operational smoke route — smoke-client
+
+Use this route when one function or live HTTP endpoint needs an end-to-end check against real infrastructure without booting the surrounding service. `smoke-client` scaffolds the operator tool; it is not a unit-test framework or load-test runner.
+
+```
+(function or endpoint) ─▶ smoke-client ─▶ smoke/ harness ─▶ dry-run
+                                                             │
+                                                     user runs online
+                                                             │
+                                              ┌──────────────┴──────────────┐
+                                              ▼                             ▼
+                                       JSONL evidence                 failure observed
+                                                                            │
+                                                                            ▼
+                                                                     §5 inquest route
+```
+
+| Step | Skill | Purpose |
+|---|---|---|
+| 1 | `smoke-client` | Scaffold `smoke/` for one in-process Go function or live HTTP endpoint. The harness reads JSONL and writes stable parsed / results / skipped / failures JSONL artifacts. |
+| 2 | `smoke-client` | Run the generated binary with `-dry-run` to validate decoding without setup, network calls, or config. |
+| 3 | (user) | Authorize and run the online command. The skill prints this command but never runs it automatically because it may consume paid APIs, staging quota, or issue real requests. |
+| 4 | (route) | If the online evidence shows a failure, hand it to **§5 incident route** (`inquest`) for PRD ↔ code ↔ smoke diagnosis. |
+
+`smoke-client` is **standalone** and writes into the target project's `smoke/` directory. It does not participate in the context ledger and does not replace `bailiff`: `bailiff` verifies code against a spec; `smoke-client` exercises a narrow path against real dependencies.
+
+**Trigger phrases:**
+- "build a smoke client", "standalone harness for `<function>`", "replay canned payloads through this handler" → `smoke-client`
+- "test this function against staging without running the service", "JSONL-driven test for this endpoint" → `smoke-client`
+- An already-observed smoke failure routes to `inquest`, not back to `smoke-client`.
+
+---
+
+## 5. Incident route — inquest (post-deploy)
 
 Triggered when smoke / staging / production disagrees with the spec. The job is not to fix the bug — it is to figure out, fast, **which artifact lied**: the spec, the code, the verifier, or the environment.
 
@@ -131,7 +164,7 @@ Triggered when smoke / staging / production disagrees with the spec. The job is 
 
 ---
 
-## 5. Architecture-doc route — code-analyze → herald
+## 6. Architecture-doc route — code-analyze → herald
 
 Onboarding docs, refactor maps, migration strategies.
 
@@ -145,7 +178,7 @@ code-analyze ─▶ .claude/analyses/<slug>.md ─▶ herald ─▶ shareable HT
 
 ---
 
-## 6. Verification-only route
+## 7. Verification-only route
 
 When you have a spec and want to verify existing code, no new build phase.
 
@@ -159,7 +192,7 @@ When you have a spec and want to verify existing code, no new build phase.
 
 ---
 
-## 7. Schema-derivation route — json-to-schema
+## 8. Schema-derivation route — json-to-schema
 
 Turn a sample `.json` into a draft-07 JSON Schema with semantic annotations and shared sub-structures factored into `$ref`s.
 
@@ -167,7 +200,7 @@ Turn a sample `.json` into a draft-07 JSON Schema with semantic annotations and 
 
 ---
 
-## 8. Retrospective route — distill
+## 9. Retrospective route — distill
 
 Runs *after* the SOP loop, not inside it. Reads every `.claude/reports/*bailiff*.md` on disk and rolls individual findings into named, recurring failure modes with mechanically enforceable guardrails.
 
@@ -209,6 +242,8 @@ Skills coordinate through a small set of well-known directories in the target pr
 - **`prds/` / `plans/` / `reports/`** — versioned via YAML frontmatter (`version`, `prd_version`, `plan_version`, `last_aligned`, `status`). `plumb` reads this metadata to detect drift; `pivot` writes/updates it on a pivot.
 - **`amendments/`** — append-only. One file per pivot. Never edit a prior amendment; write a new one that supersedes it if needed.
 
+`smoke-client` artifacts intentionally live outside `.claude/`: the generated harness is `smoke/`, and run artifacts land beside the input JSONL unless the operator sets `-output-dir`.
+
 Full ledger protocol lives in the `charter` skill's references.
 
 ---
@@ -221,6 +256,7 @@ Is the user asking for new functionality?
 └── no
     │
     ├─ requirements changed mid-flight?     ──▶ pivot (with plumb to confirm staleness)
+    ├─ need a one-function real-infra test? ──▶ smoke-client (live run requires user action)
     ├─ smoke / staging / prod failure?      ──▶ inquest
     ├─ "is anything stale?" / drift status? ──▶ plumb
     ├─ verify existing code?                ──▶ bailiff
