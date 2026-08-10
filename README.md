@@ -1,5 +1,7 @@
 # tacit-skills
 
+[English](./README.md) | [简体中文](./README-CN.md)
+
 A cohesive toolkit of AI-powered skills—and their companion app bundles—for taking software from first inspection through design, implementation, verification, and durable project memory.
 
 ## Overview
@@ -39,6 +41,8 @@ The three Honcho skills form a complete memory loop rather than a bag of isolate
 - **[honcho-manage](./honcho-manage/SKILL.md)** — Operate the self-hosted Honcho sidecar end to end: bootstrap and build the Docker Compose stack, wait for service readiness, inspect health and session details, switch scopes, and safely clean up memories across every API page.
 - **[honcho-remember](./honcho-remember/SKILL.md)** — Turn user preferences, project facts, decisions, and standing instructions into validated, atomic observations stored in the active session.
 - **[honcho-recall](./honcho-recall/SKILL.md)** — Bring stored knowledge back with recent-memory listing or semantic search, consistently scoped to the active session so project contexts do not bleed into one another.
+
+For a fully self-hosted stack, these skills work especially well with **[Laucr/honcho](https://github.com/Laucr/honcho)**, a Honcho fork that includes a self-hosted embedding service. The pairing keeps memory storage and embedding inference under your control while preserving the same manage → remember → recall workflow.
 
 Together with **Memboard** in [`.pkg/memboard`](./.pkg/memboard/), the suite provides both agent-native workflows and a human-friendly web control surface for browsing, searching, and deleting stored memories.
 
