@@ -9,32 +9,48 @@ Usage:
     echo '["User prefers uv over pip", "User is migrating to Vitest"]' | python honcho_remember.py
 """
 
+from __future__ import annotations
+
+import contextlib
 import json
 import os
 import sys
 import urllib.error
 import urllib.request
 
+_GLOBAL_DEFAULT = os.path.join(os.path.expanduser("~"), ".honcho")
+
+
+def _honcho_dir() -> str:
+    explicit = os.environ.get("HONCHO_HOME", "")
+    if explicit:
+        return os.path.abspath(os.path.expanduser(explicit))
+    current = os.path.abspath(os.getcwd())
+    for _ in range(10):
+        candidate = os.path.join(current, ".claude", "honcho")
+        if os.path.isdir(candidate):
+            return candidate
+        if os.path.isfile(os.path.join(current, "docker-compose.yml")):
+            return current
+        parent = os.path.dirname(current)
+        if parent == current:
+            break
+        current = parent
+    return _GLOBAL_DEFAULT
+
 
 def _load_dotenv():
-    """Auto-load ~/.honcho/.env into os.environ (only sets unset vars)."""
-    for candidate in [
-        os.environ.get("HONCHO_HOME", ""),
-        os.path.join(os.path.expanduser("~"), ".honcho"),
-    ]:
-        env_file = os.path.join(candidate, ".env") if candidate else ""
-        if env_file and os.path.isfile(env_file):
-            with open(env_file) as f:
-                for line in f:
-                    line = line.strip()
-                    if not line or line.startswith("#"):
-                        continue
-                    if "=" in line:
-                        k, _, v = line.partition("=")
-                        k, v = k.strip(), v.strip().strip('"').strip("'")
-                        if k not in os.environ:
-                            os.environ[k] = v
-            break
+    env_file = os.path.join(_honcho_dir(), ".env")
+    if os.path.isfile(env_file):
+        with open(env_file) as f:
+            for line in f:
+                line = line.strip()
+                if not line or line.startswith("#") or "=" not in line:
+                    continue
+                k, _, v = line.partition("=")
+                k, v = k.strip(), v.strip().strip('"').strip("'")
+                if k not in os.environ:
+                    os.environ[k] = v
 
 
 _load_dotenv()
@@ -46,31 +62,10 @@ OBSERVED = os.environ.get("HONCHO_OBSERVED", "user")
 
 # Locate session.json.
 # Priority: HONCHO_HOME env var > project-local .claude/honcho/ > ~/.honcho (global default)
-_SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-_HONCHO_HOME = os.environ.get("HONCHO_HOME", "")
-_GLOBAL_DEFAULT = os.path.join(os.path.expanduser("~"), ".honcho")
-
-
 def _find_session_file() -> str:
     """Find session.json by checking known locations."""
-    candidates = []
-    # 1. Explicit env override
-    if _HONCHO_HOME:
-        candidates.append(os.path.join(_HONCHO_HOME, "session.json"))
-    # 2. Project-local .claude/honcho/ (walk up from script dir)
-    d = _SCRIPT_DIR
-    for _ in range(10):
-        candidates.append(os.path.join(d, ".claude", "honcho", "session.json"))
-        parent = os.path.dirname(d)
-        if parent == d:
-            break
-        d = parent
-    # 3. Global default: ~/.honcho/
-    candidates.append(os.path.join(_GLOBAL_DEFAULT, "session.json"))
-    for path in candidates:
-        if os.path.isfile(path):
-            return path
-    return ""
+    path = os.path.join(_honcho_dir(), "session.json")
+    return path if os.path.isfile(path) else ""
 
 
 def get_active_session() -> str:
@@ -127,17 +122,19 @@ def main():
     session = get_active_session()
 
     # Ensure the session exists (idempotent create)
-    try:
+    with contextlib.suppress(Exception):
         _api("POST", f"/v3/workspaces/{WORKSPACE}/sessions", {"name": session})
-    except Exception:
-        pass  # Session already exists or will fail on the conclusions call
 
     # Build conclusions payload
     conclusions = []
-    for obs in observations:
-        content = obs if isinstance(obs, str) else obs.get("content", "")
-        if not content:
-            continue
+    for index, obs in enumerate(observations):
+        if not isinstance(obs, str) or not obs.strip():
+            print(
+                f"Observation at index {index} must be a non-empty string.",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+        content = obs.strip()
         conclusions.append({
             "content": content,
             "observer_id": OBSERVER,

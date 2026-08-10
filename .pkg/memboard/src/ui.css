@@ -1,0 +1,70 @@
+:root {
+  color-scheme: dark;
+  --nd-accent: #ff3b30;
+  --nd-accent-subtle: rgba(255, 59, 48, 0.08);
+  --nd-success: #34c759;
+  --nd-surface: #101010;
+  --nd-surface-raised: #1a1a1a;
+  --nd-border: #2b2b2b;
+  --nd-border-visible: #555;
+  --nd-text-display: #fff;
+  --nd-text-primary: #ededed;
+  --nd-text-secondary: #a7a7a7;
+  --nd-text-disabled: #686868;
+  --nd-font-display: Inter, ui-sans-serif, system-ui, sans-serif;
+  --nd-font-body: Inter, ui-sans-serif, system-ui, sans-serif;
+  --nd-font-mono: "SFMono-Regular", Consolas, monospace;
+  --nd-size-label: 0.7rem;
+  --nd-size-body-sm: 0.875rem;
+  --nd-size-body: 1rem;
+  --nd-size-subheading: 1.1rem;
+  --nd-weight-medium: 600;
+  --nd-tracking-tight: -0.02em;
+  --nd-tracking-label: 0.08em;
+  --nd-tracking-wide: 0.04em;
+  --nd-lh-body: 1.55;
+  --nd-space-xs: 0.4rem;
+  --nd-space-sm: 0.75rem;
+  --nd-space-md: 1rem;
+  --nd-space-lg: 1.5rem;
+  --nd-space-3xl: 4rem;
+  --nd-radius-sm: 2px;
+  --nd-duration-fast: 120ms;
+  --nd-ease: ease;
+}
+
+* { box-sizing: border-box; }
+html, body, #root { min-height: 100%; margin: 0; }
+body { background: var(--nd-surface); color: var(--nd-text-primary); font-family: var(--nd-font-body); }
+button, input { font: inherit; }
+
+.nd-card { padding: var(--nd-space-md); background: transparent; }
+.nd-card--bordered { border: 1px solid var(--nd-border); }
+.nd-button {
+  border: 1px solid var(--nd-border-visible);
+  padding: 0.55rem 0.85rem;
+  background: transparent;
+  color: var(--nd-text-primary);
+  font-family: var(--nd-font-mono);
+  font-size: var(--nd-size-body-sm);
+  cursor: pointer;
+}
+.nd-button--compact { padding: 0.35rem 0.65rem; }
+.nd-button--primary { background: var(--nd-text-primary); border-color: var(--nd-text-primary); color: var(--nd-surface); }
+.nd-button--destructive { background: var(--nd-accent); border-color: var(--nd-accent); color: #fff; }
+.nd-button--ghost { border-color: transparent; }
+.nd-button:disabled { cursor: default; opacity: 0.45; }
+
+.nd-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  padding: var(--nd-space-lg);
+  background: rgba(0, 0, 0, 0.72);
+}
+.nd-modal { width: min(480px, 100%); border: 1px solid var(--nd-border-visible); background: var(--nd-surface-raised); padding: var(--nd-space-lg); }
+.nd-modal h2 { margin: 0; font-size: var(--nd-size-subheading); }
+.nd-modal-body { color: var(--nd-text-secondary); line-height: var(--nd-lh-body); }
+.nd-modal-footer { display: flex; justify-content: flex-end; gap: var(--nd-space-sm); margin-top: var(--nd-space-lg); }

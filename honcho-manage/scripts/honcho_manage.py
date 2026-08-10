@@ -21,33 +21,51 @@ Usage:
     python honcho_manage.py forget abc123
 """
 
+from __future__ import annotations
+
 import json
 import os
+import shutil
 import subprocess
 import sys
 import urllib.error
 import urllib.request
 
+_GLOBAL_DEFAULT = os.path.join(os.path.expanduser("~"), ".honcho")
+
+
+def _honcho_dir() -> str:
+    """Resolve config from HONCHO_HOME, cwd/repo, project-local, then global."""
+    explicit = os.environ.get("HONCHO_HOME", "")
+    if explicit:
+        return os.path.abspath(os.path.expanduser(explicit))
+    current = os.path.abspath(os.getcwd())
+    if os.path.isfile(os.path.join(current, "docker-compose.yml")):
+        return current
+    for _ in range(10):
+        candidate = os.path.join(current, ".claude", "honcho")
+        if os.path.isdir(candidate):
+            return candidate
+        parent = os.path.dirname(current)
+        if parent == current:
+            break
+        current = parent
+    return _GLOBAL_DEFAULT
+
 
 def _load_dotenv():
-    """Auto-load ~/.honcho/.env into os.environ (only sets unset vars)."""
-    for candidate in [
-        os.environ.get("HONCHO_HOME", ""),
-        os.path.join(os.path.expanduser("~"), ".honcho"),
-    ]:
-        env_file = os.path.join(candidate, ".env") if candidate else ""
-        if env_file and os.path.isfile(env_file):
-            with open(env_file) as f:
-                for line in f:
-                    line = line.strip()
-                    if not line or line.startswith("#"):
-                        continue
-                    if "=" in line:
-                        k, _, v = line.partition("=")
-                        k, v = k.strip(), v.strip().strip('"').strip("'")
-                        if k not in os.environ:
-                            os.environ[k] = v
-            break
+    """Load .env from the directory used for session and Compose state."""
+    env_file = os.path.join(_honcho_dir(), ".env")
+    if os.path.isfile(env_file):
+        with open(env_file) as f:
+            for line in f:
+                line = line.strip()
+                if not line or line.startswith("#") or "=" not in line:
+                    continue
+                k, _, v = line.partition("=")
+                k, v = k.strip(), v.strip().strip('"').strip("'")
+                if k not in os.environ:
+                    os.environ[k] = v
 
 
 _load_dotenv()
@@ -57,40 +75,26 @@ WORKSPACE = os.environ.get("HONCHO_WORKSPACE", "claude-code")
 OBSERVER = os.environ.get("HONCHO_OBSERVER", "claude-code")
 OBSERVED = os.environ.get("HONCHO_OBSERVED", "user")
 
-_SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-_HONCHO_HOME = os.environ.get("HONCHO_HOME", "")
-_GLOBAL_DEFAULT = os.path.join(os.path.expanduser("~"), ".honcho")
-
-
-def _honcho_dir() -> str:
-    """Find the honcho config directory.
-
-    Priority:
-      1. HONCHO_HOME env var (explicit override)
-      2. Project-local .claude/honcho/ (walk up from script dir)
-      3. ~/.honcho/ (global default — created by setup if needed)
-    """
-    # 1. Explicit env override
-    if _HONCHO_HOME:
-        if os.path.isdir(_HONCHO_HOME):
-            return _HONCHO_HOME
-        return _HONCHO_HOME  # still return it so setup can create it
-    # 2. Project-local .claude/honcho/
-    d = _SCRIPT_DIR
-    for _ in range(10):
-        candidate = os.path.join(d, ".claude", "honcho")
-        if os.path.isdir(candidate):
-            return candidate
-        parent = os.path.dirname(d)
-        if parent == d:
-            break
-        d = parent
-    # 3. Global default
-    return _GLOBAL_DEFAULT
-
-
 def _session_file() -> str:
     return os.path.join(_honcho_dir(), "session.json")
+
+
+def _list_all_sessions() -> list[dict]:
+    """Fetch every sessions page instead of silently truncating at one page."""
+    items: list[dict] = []
+    page = 1
+    while True:
+        result = _api(
+            "POST",
+            f"/v3/workspaces/{WORKSPACE}/sessions/list?size=100&page={page}",
+            {},
+        )
+        batch = result.get("items", []) if isinstance(result, dict) else []
+        items.extend(batch)
+        pages = result.get("pages", page) if isinstance(result, dict) else page
+        if not batch or page >= pages:
+            return items
+        page += 1
 
 
 def _api(method: str, path: str, body: dict | None = None) -> dict | list:
@@ -249,8 +253,7 @@ def _provision_database(db_uri: str) -> None:
         if password:
             admin_dsn += f" password={password}"
 
-        with psycopg.connect(admin_dsn, autocommit=True) as conn:
-            with conn.cursor() as cur:
+        with psycopg.connect(admin_dsn, autocommit=True) as conn, conn.cursor() as cur:
                 cur.execute(
                     "SELECT 1 FROM pg_database WHERE datname = %s", (dbname,)
                 )
@@ -269,10 +272,10 @@ def _provision_database(db_uri: str) -> None:
         print(f"  Database check via psycopg failed: {e}", file=sys.stderr)
 
     # Last resort: print manual instructions
-    print(f"\n  Could not auto-check database (psql and psycopg not available).")
-    print(f"  Please ensure the database exists before starting Honcho:\n")
+    print("\n  Could not auto-check database (psql and psycopg not available).")
+    print("  Please ensure the database exists before starting Honcho:\n")
     print(f'    CREATE DATABASE "{dbname}";')
-    print(f"\n  Honcho will handle pgvector + schema setup on first start.")
+    print("\n  Honcho will handle pgvector + schema setup on first start.")
 
 
 def cmd_setup(args: list[str]):
@@ -291,26 +294,27 @@ def cmd_setup(args: list[str]):
     env_file = os.path.join(honcho_dir, ".env")
     if not os.path.isfile(env_file):
         example = os.path.join(honcho_dir, ".env.example")
-        print(f"No .env found at {env_file}.")
-        print(f"Copy the example and fill in your values:")
         if os.path.isfile(example):
-            print(f"  cp {example} {env_file}")
+            shutil.copyfile(example, env_file)
+            print(f"Created {env_file} from .env.example.")
         else:
-            print(f"  Create {env_file} with HONCHO_DB_URI and other settings.")
-        sys.exit(1)
+            print(f"Error: neither {env_file} nor {example} exists.", file=sys.stderr)
+            sys.exit(1)
 
     # Read DB URI from .env to provision database + pgvector before Docker starts
     db_uri = _read_env_var(env_file, "HONCHO_DB_URI")
     if db_uri:
         _provision_database(db_uri)
     else:
-        print("Warning: HONCHO_DB_URI not found in .env — skipping database provisioning.", file=sys.stderr)
-        print("Make sure the database exists and has pgvector enabled.", file=sys.stderr)
+        print("Using the PostgreSQL service managed by Docker Compose.")
 
     # Start containers
     print("\nStarting Honcho sidecar...")
     result = subprocess.run(
-        ["docker", "compose", "-f", compose_file, "up", "-d"],
+        [
+            "docker", "compose", "--project-directory", honcho_dir,
+            "-f", compose_file, "up", "-d", "--build",
+        ],
         capture_output=True, text=True,
     )
     if result.returncode != 0:
@@ -321,13 +325,17 @@ def cmd_setup(args: list[str]):
     # Wait for health
     print("Waiting for Honcho API to be ready...")
     import time
-    for attempt in range(30):
+    for _attempt in range(300):
         if _health_check():
             print("Honcho API is healthy.")
             break
         time.sleep(2)
     else:
-        print("Honcho API did not become healthy within 60s.", file=sys.stderr)
+        print("Honcho API did not become healthy within 10 minutes.", file=sys.stderr)
+        subprocess.run(
+            ["docker", "compose", "--project-directory", honcho_dir, "-f", compose_file, "ps"],
+            check=False,
+        )
         sys.exit(1)
 
     # Create workspace (idempotent — returns existing if name matches)
@@ -435,8 +443,7 @@ def cmd_session(args: list[str]):
 
     elif sub == "list":
         try:
-            result = _api("POST", f"/v3/workspaces/{WORKSPACE}/sessions/list?size=50", {})
-            items = result.get("items", []) if isinstance(result, dict) else []
+            items = _list_all_sessions()
             if not items:
                 print("No sessions found.")
                 return
@@ -453,7 +460,6 @@ def cmd_session(args: list[str]):
             print("Usage: session show <name>", file=sys.stderr)
             sys.exit(1)
         name = args[1]
-        # Just show the current binding
         sf = _session_file()
         current = "global"
         if os.path.isfile(sf):
@@ -462,8 +468,24 @@ def cmd_session(args: list[str]):
                     current = json.load(f).get("session", "global")
             except (json.JSONDecodeError, OSError):
                 pass
-        active = " (ACTIVE)" if current == name else ""
-        print(f"Session: {name}{active}")
+        try:
+            session = next(
+                (
+                    item
+                    for item in _list_all_sessions()
+                    if item.get("name", item.get("id")) == name
+                ),
+                None,
+            )
+        except RuntimeError as e:
+            print(f"Error loading session: {e}", file=sys.stderr)
+            return
+        if session is None:
+            print(f"Session not found: {name}", file=sys.stderr)
+            return
+        details = dict(session)
+        details["active"] = current == name
+        print(json.dumps(details, indent=2, sort_keys=True))
 
     else:
         print(f"Unknown session subcommand: {sub}", file=sys.stderr)
@@ -496,27 +518,40 @@ def cmd_forget(args: list[str]):
 
     elif args[0] == "--session" and len(args) > 1:
         session_name = args[1]
-        # List conclusions for this session and delete them
-        results = _api("POST", f"/v3/workspaces/{WORKSPACE}/conclusions/list?size=100", {
-            "filters": {
-                "observer_id": OBSERVER,
-                "observed_id": OBSERVED,
-                "session_id": session_name,
-            },
-        })
-        items = results.get("items", []) if isinstance(results, dict) else []
-        if not items:
+        count = 0
+        while True:
+            results = _api(
+                "POST",
+                f"/v3/workspaces/{WORKSPACE}/conclusions/list?size=100&page=1",
+                {
+                    "filters": {
+                        "observer_id": OBSERVER,
+                        "observed_id": OBSERVED,
+                        "session_id": session_name,
+                    },
+                },
+            )
+            items = results.get("items", []) if isinstance(results, dict) else []
+            if not items:
+                break
+            deleted_this_page = 0
+            for c in items:
+                cid = c.get("id")
+                if cid:
+                    try:
+                        _api(
+                            "DELETE",
+                            f"/v3/workspaces/{WORKSPACE}/conclusions/{cid}",
+                        )
+                        count += 1
+                        deleted_this_page += 1
+                    except RuntimeError as e:
+                        print(f"  Failed to delete {cid}: {e}", file=sys.stderr)
+            if deleted_this_page == 0:
+                break
+        if count == 0:
             print(f"No observations found for session '{session_name}'.")
             return
-        count = 0
-        for c in items:
-            cid = c.get("id")
-            if cid:
-                try:
-                    _api("DELETE", f"/v3/workspaces/{WORKSPACE}/conclusions/{cid}")
-                    count += 1
-                except RuntimeError as e:
-                    print(f"  Failed to delete {cid}: {e}", file=sys.stderr)
         print(f"Deleted {count} observation(s) from session '{session_name}'.")
 
     else:

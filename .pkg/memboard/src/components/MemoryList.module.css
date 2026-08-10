@@ -1,0 +1,111 @@
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--nd-space-sm);
+  padding: 0 var(--nd-space-sm) var(--nd-space-lg);
+}
+
+.header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: var(--nd-space-sm) var(--nd-space-md);
+  margin-bottom: var(--nd-space-sm);
+  border-bottom: 1px solid var(--nd-border);
+}
+
+.scope {
+  font-family: var(--nd-font-display);
+  font-size: var(--nd-size-subheading);
+  font-weight: var(--nd-weight-medium);
+  color: var(--nd-text-display);
+  letter-spacing: var(--nd-tracking-tight);
+}
+
+.count {
+  font-family: var(--nd-font-mono);
+  font-size: var(--nd-size-label);
+  letter-spacing: var(--nd-tracking-label);
+  text-transform: uppercase;
+  color: var(--nd-text-secondary);
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--nd-space-md);
+}
+
+.content {
+  font-family: var(--nd-font-body);
+  font-size: var(--nd-size-body-sm);
+  line-height: var(--nd-lh-body);
+  color: var(--nd-text-primary);
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.meta {
+  display: flex;
+  align-items: center;
+  gap: var(--nd-space-md);
+  padding-top: var(--nd-space-sm);
+  border-top: 1px solid var(--nd-border);
+  font-family: var(--nd-font-mono);
+  font-size: var(--nd-size-label);
+  letter-spacing: var(--nd-tracking-wide);
+}
+
+.session {
+  color: var(--nd-text-secondary);
+  text-transform: uppercase;
+}
+
+.date {
+  color: var(--nd-text-disabled);
+}
+
+.metaSpacer {
+  flex: 1;
+}
+
+.empty {
+  padding: var(--nd-space-3xl) var(--nd-space-lg);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: var(--nd-space-md);
+}
+
+.emptyPrimary {
+  font-family: var(--nd-font-display);
+  font-size: var(--nd-size-subheading);
+  color: var(--nd-text-secondary);
+}
+
+.emptyHint {
+  font-family: var(--nd-font-mono);
+  font-size: var(--nd-size-label);
+  letter-spacing: 0.02em;
+  color: var(--nd-text-disabled);
+  line-height: var(--nd-lh-body);
+}
+
+.emptyHint code {
+  font-family: var(--nd-font-mono);
+  color: var(--nd-text-secondary);
+  background: var(--nd-surface-raised);
+  padding: 0 var(--nd-space-xs);
+}
+
+.loadMore {
+  display: flex;
+  justify-content: center;
+  padding: var(--nd-space-md) 0 var(--nd-space-3xl);
+}
+
+.errorText {
+  color: var(--nd-accent);
+  font-family: var(--nd-font-mono);
+  font-size: var(--nd-size-body-sm);
+}

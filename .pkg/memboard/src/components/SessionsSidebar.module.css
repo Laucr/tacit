@@ -1,0 +1,112 @@
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--nd-space-sm);
+  min-height: 0;
+}
+
+.heading {
+  font-family: var(--nd-font-mono);
+  font-size: var(--nd-size-label);
+  letter-spacing: var(--nd-tracking-label);
+  text-transform: uppercase;
+  color: var(--nd-text-secondary);
+  padding: 0 var(--nd-space-md);
+}
+
+.list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid var(--nd-border);
+  transition: background var(--nd-duration-fast) var(--nd-ease);
+}
+
+.item:hover {
+  background: var(--nd-surface-raised);
+}
+
+.item--active {
+  background: var(--nd-surface-raised);
+  position: relative;
+}
+
+.item--active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--nd-accent);
+}
+
+.itemButton {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: var(--nd-space-sm) var(--nd-space-md);
+  background: transparent;
+  border: 0;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.itemName {
+  font-family: var(--nd-font-mono);
+  font-size: var(--nd-size-body-sm);
+  color: var(--nd-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.itemDate {
+  font-family: var(--nd-font-mono);
+  font-size: var(--nd-size-label);
+  letter-spacing: var(--nd-tracking-wide);
+  color: var(--nd-text-disabled);
+}
+
+.wipe {
+  padding: var(--nd-space-xs) var(--nd-space-sm);
+  background: transparent;
+  border: 0;
+  color: var(--nd-text-disabled);
+  font-family: var(--nd-font-mono);
+  font-size: var(--nd-size-body);
+  cursor: pointer;
+  transition: color var(--nd-duration-fast) var(--nd-ease);
+}
+
+.wipe:hover {
+  color: var(--nd-accent);
+}
+
+.empty {
+  padding: var(--nd-space-md);
+  font-family: var(--nd-font-mono);
+  font-size: var(--nd-size-label);
+  letter-spacing: 0.02em;
+  color: var(--nd-text-disabled);
+  line-height: var(--nd-lh-body);
+}
+
+.empty code {
+  font-family: var(--nd-font-mono);
+  color: var(--nd-text-secondary);
+  background: var(--nd-surface-raised);
+  padding: 0 var(--nd-space-xs);
+}

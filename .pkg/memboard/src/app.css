@@ -1,0 +1,51 @@
+/*
+ * Memboard app-level layout.
+ * Shared tokens, reset, and primitives live in ui.css.
+ * Only app composition lives here.
+ */
+
+.app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-layout {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: var(--nd-space-md);
+  padding: var(--nd-space-md) var(--nd-space-lg);
+  min-height: 0;
+}
+
+.app-main {
+  min-width: 0;
+  overflow-y: auto;
+}
+
+.connection-banner {
+  padding: var(--nd-space-md) var(--nd-space-lg);
+  margin: 0 var(--nd-space-lg) var(--nd-space-md);
+  border: 1px solid var(--nd-accent);
+  background: var(--nd-accent-subtle);
+  color: var(--nd-accent);
+  font-family: var(--nd-font-mono);
+  font-size: var(--nd-size-body-sm);
+  letter-spacing: 0.02em;
+}
+
+.connection-banner code {
+  font-family: var(--nd-font-mono);
+  color: var(--nd-text-primary);
+  background: var(--nd-surface-raised);
+  padding: 0 var(--nd-space-xs);
+  border-radius: var(--nd-radius-sm);
+}
+
+@media (max-width: 720px) {
+  .app-layout {
+    grid-template-columns: 1fr;
+    padding: var(--nd-space-sm);
+  }
+}

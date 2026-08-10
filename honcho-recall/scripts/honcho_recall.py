@@ -10,32 +10,47 @@ Usage:
     python honcho_recall.py --list                       # list all recent
 """
 
+from __future__ import annotations
+
 import json
 import os
 import sys
 import urllib.error
 import urllib.request
 
+_GLOBAL_DEFAULT = os.path.join(os.path.expanduser("~"), ".honcho")
+
+
+def _honcho_dir() -> str:
+    explicit = os.environ.get("HONCHO_HOME", "")
+    if explicit:
+        return os.path.abspath(os.path.expanduser(explicit))
+    current = os.path.abspath(os.getcwd())
+    for _ in range(10):
+        candidate = os.path.join(current, ".claude", "honcho")
+        if os.path.isdir(candidate):
+            return candidate
+        if os.path.isfile(os.path.join(current, "docker-compose.yml")):
+            return current
+        parent = os.path.dirname(current)
+        if parent == current:
+            break
+        current = parent
+    return _GLOBAL_DEFAULT
+
 
 def _load_dotenv():
-    """Auto-load ~/.honcho/.env into os.environ (only sets unset vars)."""
-    for candidate in [
-        os.environ.get("HONCHO_HOME", ""),
-        os.path.join(os.path.expanduser("~"), ".honcho"),
-    ]:
-        env_file = os.path.join(candidate, ".env") if candidate else ""
-        if env_file and os.path.isfile(env_file):
-            with open(env_file) as f:
-                for line in f:
-                    line = line.strip()
-                    if not line or line.startswith("#"):
-                        continue
-                    if "=" in line:
-                        k, _, v = line.partition("=")
-                        k, v = k.strip(), v.strip().strip('"').strip("'")
-                        if k not in os.environ:
-                            os.environ[k] = v
-            break
+    env_file = os.path.join(_honcho_dir(), ".env")
+    if os.path.isfile(env_file):
+        with open(env_file) as f:
+            for line in f:
+                line = line.strip()
+                if not line or line.startswith("#") or "=" not in line:
+                    continue
+                k, _, v = line.partition("=")
+                k, v = k.strip(), v.strip().strip('"').strip("'")
+                if k not in os.environ:
+                    os.environ[k] = v
 
 
 _load_dotenv()
@@ -45,30 +60,9 @@ WORKSPACE = os.environ.get("HONCHO_WORKSPACE", "claude-code")
 OBSERVER = os.environ.get("HONCHO_OBSERVER", "claude-code")
 OBSERVED = os.environ.get("HONCHO_OBSERVED", "user")
 
-_SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-_HONCHO_HOME = os.environ.get("HONCHO_HOME", "")
-_GLOBAL_DEFAULT = os.path.join(os.path.expanduser("~"), ".honcho")
-
-
 def _find_session_file() -> str:
-    candidates = []
-    # 1. Explicit env override
-    if _HONCHO_HOME:
-        candidates.append(os.path.join(_HONCHO_HOME, "session.json"))
-    # 2. Project-local .claude/honcho/ (walk up from script dir)
-    d = _SCRIPT_DIR
-    for _ in range(10):
-        candidates.append(os.path.join(d, ".claude", "honcho", "session.json"))
-        parent = os.path.dirname(d)
-        if parent == d:
-            break
-        d = parent
-    # 3. Global default: ~/.honcho/
-    candidates.append(os.path.join(_GLOBAL_DEFAULT, "session.json"))
-    for path in candidates:
-        if os.path.isfile(path):
-            return path
-    return ""
+    path = os.path.join(_honcho_dir(), "session.json")
+    return path if os.path.isfile(path) else ""
 
 
 def get_active_session() -> str:
@@ -127,6 +121,7 @@ def semantic_search(query: str, session: str, top_k: int = 20) -> list:
         "filters": {
             "observer": OBSERVER,
             "observed": OBSERVED,
+            "session_id": session,
         },
     }
     result = _api("POST", f"/v3/workspaces/{WORKSPACE}/conclusions/query", body)
@@ -139,6 +134,7 @@ def list_recent(session: str, size: int = 30) -> list:
         "filters": {
             "observer_id": OBSERVER,
             "observed_id": OBSERVED,
+            "session_id": session,
         },
     }
     result = _api("POST", f"/v3/workspaces/{WORKSPACE}/conclusions/list?size={size}", body)

@@ -1,6 +1,6 @@
 # tacit-skills
 
-A comprehensive toolkit of AI-powered skills for development, analysis, and operational tasks.
+A cohesive toolkit of AI-powered skills—and their companion app bundles—for taking software from first inspection through design, implementation, verification, and durable project memory.
 
 ## Overview
 
@@ -32,10 +32,15 @@ This repository contains **17 independent skills** designed to streamline softwa
 ### Utilities
 - **[json-to-schema](./json-to-schema/SKILL.md)** — Convert a sample `.json` file into a draft-07 JSON Schema definition. Infers types, factors shared sub-structures into `$ref` definitions, and adds semantic annotations (datetime, HTML, signed URLs). Includes a validation script.
 
-### Long-term Memory
-- **[honcho-manage](./honcho-manage/SKILL.md)** — Honcho memory administration. Setup, health checks, session scoping, and memory cleanup.
-- **[honcho-recall](./honcho-recall/SKILL.md)** — Recall stored knowledge from Honcho long-term memory. Query user preferences, past decisions, and project context.
-- **[honcho-remember](./honcho-remember/SKILL.md)** — Save conversation insights to Honcho long-term memory. Persist preferences, decisions, and standing instructions across sessions.
+### Long-term Memory: the Honcho suite
+
+The three Honcho skills form a complete memory loop rather than a bag of isolated commands: administer the service, save durable context, and bring the right context back into later work.
+
+- **[honcho-manage](./honcho-manage/SKILL.md)** — Operate the self-hosted Honcho sidecar end to end: bootstrap and build the Docker Compose stack, wait for service readiness, inspect health and session details, switch scopes, and safely clean up memories across every API page.
+- **[honcho-remember](./honcho-remember/SKILL.md)** — Turn user preferences, project facts, decisions, and standing instructions into validated, atomic observations stored in the active session.
+- **[honcho-recall](./honcho-recall/SKILL.md)** — Bring stored knowledge back with recent-memory listing or semantic search, consistently scoped to the active session so project contexts do not bleed into one another.
+
+Together with **Memboard** in [`.pkg/memboard`](./.pkg/memboard/), the suite provides both agent-native workflows and a human-friendly web control surface for browsing, searching, and deleting stored memories.
 
 ## Quick Start Workflow
 
@@ -89,6 +94,24 @@ For long-term memory:
 2. honcho-remember → Save preferences, decisions, context
 3. honcho-recall   → Retrieve stored knowledge
 ```
+
+The suite resolves its Honcho home from `HONCHO_HOME` first, then the current project (a Compose root or nearest `.claude/honcho/`), and finally Honcho's global `~/.honcho/` convention. This makes one installation useful both for globally shared preferences and for isolated project sessions.
+
+## Companion bundles (`.pkg`)
+
+Skills are the agent-facing interface; `.pkg/` contains the optional software that makes selected skills feel like a complete product. These bundles are deliberately kept under a hidden top-level directory so coding-agent skill loaders do not mistake them for standalone skills.
+
+### Memboard
+
+**[Memboard](./.pkg/memboard/)** is the web companion to the Honcho memory suite. It turns the same Honcho v3 API used by the skills into a compact control panel where a person can:
+
+- see service health and memory counts;
+- browse all memories or filter them by session;
+- run semantic searches;
+- delete an individual memory or wipe a session with confirmation; and
+- use the UI locally through Vite or ship it as a small containerized bundle.
+
+Memboard is a standalone Vite + React application. By default its development server proxies `/api` to Honcho at `http://localhost:8787`; workspace, observer, observed peer, base path, and API location remain configurable through the documented `VITE_*` and `HONCHO_BASE_URL` environment variables in the app source.
 
 ## Cross-Skill Memory
 
@@ -221,6 +244,7 @@ Each skill is one directory at the repo root containing `SKILL.md` plus optional
 - `.scripts/` — repo-wide tools (`install.sh`, `release.sh`, `migrate-configs.py`, `test-install.sh`)
 - `.policy/` — policy variants (`core/`, `vec-memory/`) rendered into each vendor's `policy_dir` by the installer
 - `.agents/` — agent wrappers (`bailiff.md`, `inquest.md`) rendered into each vendor's `agents_dir` by the installer
+- `.pkg/` — optional companion applications and distributable bundles attached to specific skill suites; currently includes the Honcho suite's Memboard web UI
 - `.claude/` — harness state and permissions
 
 Don't add new non-dot top-level directories unless they're a real skill with a `SKILL.md`.

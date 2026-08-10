@@ -1,0 +1,103 @@
+.statusBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--nd-space-lg);
+  padding: var(--nd-space-md) var(--nd-space-lg);
+  border-bottom: 1px solid var(--nd-border);
+}
+
+.left {
+  display: flex;
+  align-items: center;
+  gap: var(--nd-space-md);
+  min-width: 0;
+}
+
+.right {
+  display: flex;
+  align-items: center;
+  gap: var(--nd-space-sm);
+}
+
+.title {
+  font-family: var(--nd-font-display);
+  font-size: var(--nd-size-subheading);
+  font-weight: var(--nd-weight-medium);
+  color: var(--nd-text-display);
+  letter-spacing: var(--nd-tracking-tight);
+}
+
+.health {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--nd-text-disabled);
+  flex-shrink: 0;
+}
+
+.health--up {
+  background: var(--nd-success);
+}
+
+.health--down {
+  background: var(--nd-accent);
+}
+
+.count {
+  font-family: var(--nd-font-mono);
+  font-size: var(--nd-size-label);
+  letter-spacing: var(--nd-tracking-label);
+  text-transform: uppercase;
+  color: var(--nd-text-secondary);
+}
+
+.searchForm {
+  display: flex;
+  align-items: center;
+  gap: var(--nd-space-sm);
+}
+
+.searchField {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.searchInput {
+  width: 260px;
+  padding: var(--nd-space-xs) 0;
+  font-family: var(--nd-font-mono);
+  font-size: var(--nd-size-body-sm);
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--nd-border-visible);
+  color: var(--nd-text-primary);
+  outline: none;
+  transition: border-color var(--nd-duration-fast) var(--nd-ease);
+}
+
+.searchInput::placeholder {
+  color: var(--nd-text-disabled);
+}
+
+.searchInput:focus {
+  border-bottom-color: var(--nd-text-primary);
+}
+
+.searchClear {
+  position: absolute;
+  right: 0;
+  padding: var(--nd-space-xs);
+  background: transparent;
+  border: 0;
+  color: var(--nd-text-secondary);
+  font-family: var(--nd-font-mono);
+  cursor: pointer;
+  transition: color var(--nd-duration-fast) var(--nd-ease);
+}
+
+.searchClear:hover {
+  color: var(--nd-text-primary);
+}

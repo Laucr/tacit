@@ -1,0 +1,6 @@
+{
+  "name": "Memboard",
+  "route": "/memboard/",
+  "visibility": "PRIVATE",
+  "description": "Honcho long-term memory panel. Browse, search, and manage coding agent stored memories."
+}
