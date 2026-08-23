@@ -23,7 +23,7 @@
 
 ### 验证
 
-- **[bailiff](./bailiff/SKILL.md)** — 规格驱动的验证与契约级测试。检查实现是否符合规格，并执行 Go 代码质量检查。
+- **[bailiff](./bailiff/SKILL.md)** — 规格驱动的验证与契约级测试。检查实现是否符合规格，执行 Go 代码质量检查，并扫描代码树（含 `.claude/`、`.agent/`）中泄露的本机路径、密钥以及未采纳方案的残留注释。
 - **[plumb](./plumb/SKILL.md)** — 对比 PRD、计划、构建报告和 bailiff 产物的版本，指出哪些功能的计划、构建或结论已经过期。它是只读传感器，不会修改文件；builder 和 bailiff 会在预检阶段自动调用它。
 - **[smoke-client](./smoke-client/SKILL.md)** — 为单个进程内函数或在线 HTTP 端点搭建独立的 Go 冒烟测试客户端。无需启动周边服务即可重放 JSONL 输入，并稳定输出 parsed、results、skipped 和 failures 等 JSONL 产物；dry-run 模式只解码，不发起网络请求。
 - **[inquest](./inquest/SKILL.md)** — 在验证结论或部署之后展开调查，包含两种模式：**smoke**（对比 PRD ↔ 代码 ↔ 冒烟结果，判断故障属于代码缺陷、规格缺口、规格过期还是环境问题）和 **triage**（逐项核验 bailiff 报告，限定在问题指向的文件内修复真实问题、驳回误报，并更新报告状态）。不会调用其他技能。

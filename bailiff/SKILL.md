@@ -1,6 +1,6 @@
 ---
 name: bailiff
-description: Adversarial verification of code against a spec. Reads a PRD, plan, or requirements doc, builds an independent expectation checklist *before* looking at any code, then writes and runs contract-level tests to enforce it. Works with blueprint/builder outputs (.claude/prds/ and .claude/plans/) or any standalone spec. Use this skill when the user wants to verify an implementation, check if code matches a spec, audit code against requirements, run acceptance tests, or asks "does this match the spec" or "did we build everything."
+description: Adversarial verification of code against a spec. Reads a PRD, plan, or requirements doc, builds an independent expectation checklist *before* looking at any code, then writes and runs contract-level tests to enforce it. Always runs language-independent scans for leaked local paths, secrets/tokens, and leftover unchosen-path comments, plus language-specific quality checks. Works with blueprint/builder outputs (.claude/prds/ and .claude/plans/) or any standalone spec. Use this skill when the user wants to verify an implementation, check if code matches a spec, audit code against requirements, run acceptance tests, or asks "does this match the spec" or "did we build everything."
 ---
 
 # Bailiff
@@ -100,17 +100,27 @@ The bailiff must form its expectations from the spec *before* reading any implem
 
 The workflow enforces this separation strictly: Phase 1 reads only the spec. Phase 1.5 runs static checks. Phase 2 writes tests from that understanding. Only Phase 3 touches the implementation.
 
-## Language-Specific Static Checks
+## Static Checks
 
-The bailiff bundles static check scripts for common languages. These catch baseline code quality issues (wrong logger, ignored errors, missing cleanup) that apply regardless of the spec.
+The bailiff bundles static check scripts. These catch baseline issues that apply regardless of the spec.
 
-Check the project's language and read the corresponding reference:
+### Universal (always run)
+
+Language-independent. Run on every pass, including non-Go projects. Do **not** skip this layer.
+
+| Check | Reference | Scripts |
+|---|---|---|
+| Local paths, secrets, leftover pre-thinking | [references/common_checks.md](./references/common_checks.md) | `scripts/common/check_*.js` |
+
+Default scan is **git-tracked files plus** `.claude/`, `.agent/`, and `.agents/` (even when gitignored). Secrets and home-dir paths leak from files the current feature did not touch. `check_prethink.js` catches mechanical leftover-path comments; Phase 3 Step 4 still judges residue the regex misses.
+
+### Language-specific
 
 | Language | Reference | Scripts |
 |---|---|---|
 | Go | [references/go_checks.md](./references/go_checks.md) | `scripts/go/check_*.js` |
 
-Each reference doc explains what the checks catch, how to run them, and how to interpret the output. If the project uses a language not listed here, skip the static checks phase.
+Each reference doc explains what the checks catch, how to run them, and how to interpret the output. If no language table row matches, still run the universal checks; only the language-specific layer is skipped.
 
 ## Performance Pitfalls Reference
 
@@ -224,17 +234,19 @@ Iterate until confirmed.
 
 ## Phase 1.5: Run Static Checks
 
-**Goal:** Catch baseline code quality issues before diving into contract tests. These are universal standards — they apply regardless of what the spec says.
+**Goal:** Catch baseline hygiene and language-quality issues before diving into contract tests. These apply regardless of what the spec says.
 
-1. **Identify the project language** from the codebase (Go, TypeScript, etc.)
-2. **Read the corresponding reference** from `references/` (e.g., `references/go_checks.md` for Go). It lists the available checks, how to run them, and how to interpret output.
-3. **Collect changed files** — use `git diff --name-only` or the user-specified scope to identify which files to check.
-4. **Build and run each check script** against the changed files. The reference doc explains the exact commands.
-5. **Include static check results in the report** — these go in a dedicated "Static Checks" section before the expectation results.
+1. **Run universal checks.** Read [references/common_checks.md](./references/common_checks.md) and run `scripts/common/check_local_paths.js`, `check_secrets.js`, and `check_prethink.js` with no file arguments (default scan). This layer is mandatory.
+2. **Identify the project language** from the codebase (Go, TypeScript, etc.).
+3. **If a language reference exists**, read it (e.g. `references/go_checks.md` for Go). Collect changed files with `git diff --name-only` (or the user-specified scope) and run each `scripts/<lang>/check_*.js` against those files.
+4. **Include static check results in the report** — dedicated "Static Checks" section before the expectation results.
+5. **Promote `error` findings to Failures.** Secret literals, credentialed URLs, and private keys are Failures, not footnotes. They block a PASS verdict. `warning` / `info` stay in the Static Checks table.
 
-Static check findings are independent of the spec. A file can pass all spec-based contract tests but still fail static checks (e.g., using `fmt.Println` instead of `log`).
+A file can pass every spec-based contract test and still fail static checks (home path in source, token in `.claude/`, leftover "we considered Redis" comment, `fmt.Println` instead of `log`).
 
-If no reference exists for the project's language, skip this phase.
+Do not copy raw secrets into the report — the scripts redact; keep them redacted.
+
+If no language reference exists, skip only the language-specific scripts. Never skip the universal layer.
 
 ---
 
@@ -305,6 +317,19 @@ With the implementation now visible, do a final scan:
 - Are there spec requirements that passed but with suspiciously thin coverage? Strengthen those tests.
 - Are there side effects the spec mentions (writes to DB, publishes events) that the tests didn't verify? Add those checks.
 
+### Step 4: Eliminate Redundant Pre-Thinking
+
+The plan is allowed to record alternatives. The code is not.
+
+Cross-check the implementation against the plan's *Approach* (alternatives considered) and *Not Doing* sections. Flag as warnings (or Failures if they are live unused branches):
+
+- Comments that recap a discarded design, justify why X was not used, or keep "the other plan" around "in case we switch"
+- Commented-out functions/blocks that implement an unchosen path
+- Unused helpers whose only purpose is a rejected approach
+- Dead gates (`if false`, `#if 0`) wrapping leftover work
+
+Do not "document the decision" in source. Delete the residue. The plan already has it.
+
 ---
 
 ## Phase 4: Verdict
@@ -340,6 +365,9 @@ The completed report carries:
 |---|---|---|---|---|---|
 | 1 | cmd/server.go | 42 | logging | warning | fmt.Println found — use log package |
 | 2 | client/client.go | 87 | error_handling | warning | Error ignored with _ = pattern |
+| 3 | cmd/server.go | 10 | local_paths | warning | Machine-local home path: /Users/***/proj |
+| 4 | .claude/settings.json | 4 | secrets | error | Confidential literal (openai_key) |
+| 5 | internal/store.go | 88 | prethink | warning | Redundant pre-thinking: recaps a discarded plan |
 
 ## Expectation Results
 
@@ -378,8 +406,8 @@ The completed report carries:
 
 ### Verdict Criteria
 
-- **PASS** — All expectations met (SKIP and WARN items are acceptable)
-- **PARTIAL** — Some expectations met, some failed, but core functionality works
+- **PASS** — All expectations met (SKIP and WARN items are acceptable) **and** no `error`-severity static findings
+- **PARTIAL** — Some expectations met, some failed, but core functionality works; **or** any `error`-severity static finding (secrets, credentialed URLs, private keys) alongside otherwise-passing expectations
 - **FAIL** — Critical expectations unmet, or majority of expectations failed
 
 Present the report to the user with a concise summary.
@@ -403,6 +431,7 @@ See [charter/references/context-ledger-spec.md](../charter/references/context-le
 ## Guidelines
 
 - **Spec is law.** The spec defines what's correct, not the code. If the code does something the spec doesn't mention, that's a warning, not a feature.
+- **Chosen path only.** Code and comments describe what shipped. Unchosen paths, rejected plans, and "we could have" rationale stay in the plan, never in the code space.
 - **Expectations before code.** Form your checklist before reading implementation. This is non-negotiable — it's the whole point of the adversarial approach.
 - **Test at the contract boundary.** Contract-level tests through public interfaces. Don't test internals unless the spec explicitly describes them.
 - **Adapt, don't fail on naming.** If the spec says "CreateUser" but the proto says "AddUser," note the discrepancy, adapt the test, and flag it. Don't let naming mismatches block the entire verification.

@@ -1,6 +1,6 @@
 # Go Static Checks
 
-Baseline checks for Go code quality. These apply to **all** Go code changes regardless of spec — they enforce universal standards.
+Baseline checks for Go code quality. These apply to **all** Go code changes regardless of spec — they enforce language-specific standards. Universal (language-independent) checks live in [common_checks.md](./common_checks.md) and always run, including on non-Go projects.
 
 Scripts are plain JavaScript (Node.js) — no compilation, no dependencies beyond what's already available in any Claude Code / codex environment.
 

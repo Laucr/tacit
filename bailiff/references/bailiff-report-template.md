@@ -33,6 +33,13 @@ status: current
 | # | File | Line | Check | Severity | Message |
 |---|---|---|---|---|---|
 | 1 | cmd/server.go | 42 | logging | warning | fmt.Println found — use log package |
+| 2 | cmd/server.go | 10 | local_paths | warning | Machine-local home path — replace with a relative path or config: /Users/***/proj |
+| 3 | .claude/settings.json | 4 | secrets | error | Confidential literal (openai_key) |
+| 4 | internal/store.go | 88 | prethink | warning | Redundant pre-thinking: recaps a discarded plan |
+
+<!-- Universal checks (local_paths, secrets, prethink) always run.
+     `error` rows (typically secrets) are Failures and block PASS.
+     Secret `code` / message text must stay redacted. -->
 
 ## Expectation Results
 
