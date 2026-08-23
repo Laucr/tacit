@@ -1,6 +1,6 @@
 # tacit-skills
 
-[English](./README.md) | [简体中文](./README-CN.md)
+English | [简体中文](./README-CN.md)
 
 A cohesive toolkit of AI-powered skills—and their companion app bundles—for taking software from first inspection through design, implementation, verification, and durable project memory.
 
