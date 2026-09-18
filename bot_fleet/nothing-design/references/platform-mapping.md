@@ -35,7 +35,7 @@ Load fonts via Google Fonts `<link>` or `@import`. Use CSS custom properties, `r
 
 ## 2. SWIFTUI / iOS
 
-Register fonts in Info.plist, bundle `.ttf` files. Use `@Environment(\\.colorScheme)` for mode switching.
+Register fonts in Info.plist, bundle `.ttf` files. Use `@Environment(\.colorScheme)` for mode switching.
 
 ```swift
 extension Color {
