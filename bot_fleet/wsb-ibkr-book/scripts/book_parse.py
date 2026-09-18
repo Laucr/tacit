@@ -81,6 +81,7 @@ def _metric_map(md: str) -> dict[str, float]:
         key = row[0].lower()
         val = _num(row[1])
         if val is None:
+            # leverage like 0.84x
             m = re.search(r"([\d.]+)\s*x", row[1], re.I)
             if m:
                 val = float(m.group(1))
@@ -161,6 +162,7 @@ def parse_overview(md: str, source: dict) -> dict:
         "equities": equities,
         "options": options,
     }
+    # Prefer exact metric keys with ampersand variants
     if book["account"]["unrealized_pnl"] is None:
         for k, v in metrics.items():
             if "unrealized" in k:
@@ -176,11 +178,17 @@ def parse_overview(md: str, source: dict) -> dict:
     for o in options:
         if not o.get("symbol"):
             continue
-        opt_bits.append(f"{o['symbol']} {o.get('expiry','')} {o.get('strike')}{o.get('cp')} qty={o.get('qty')} credit={o.get('credit')}")
-    summary = (f"IBKR book from {source.get('title') or 'overview'} (modified {source.get('modifiedTime')}). "
-               f"NAV={book['account'].get('net_liq')} cash={book['account'].get('cash')} "
-               f"lev={book['account'].get('leverage')}. Core: {', '.join(core) or 'n/a'}. "
-               f"Opts: {'; '.join(opt_bits) or 'n/a'}.")
+        opt_bits.append(
+            f"{o['symbol']} {o.get('expiry','')} {o.get('strike')}{o.get('cp')} qty={o.get('qty')} credit={o.get('credit')}"
+        )
+    summary = (
+        f"IBKR book from {source.get('title') or 'overview'} "
+        f"(modified {source.get('modifiedTime')}). "
+        f"NAV={book['account'].get('net_liq')} cash={book['account'].get('cash')} "
+        f"lev={book['account'].get('leverage')}. "
+        f"Core: {', '.join(core) or 'n/a'}. "
+        f"Opts: {'; '.join(opt_bits) or 'n/a'}."
+    )
     book["summary"] = summary
     return book
 
@@ -226,20 +234,36 @@ def main() -> None:
     args = ap.parse_args()
     if args.cmd == "write":
         md = Path(args.md).read_text()
-        book = parse_overview(md,{"title": args.source_title,"fileId": args.source_id,"modifiedTime": args.source_modified,"viewUrl": args.source_url})
+        book = parse_overview(
+            md,
+            {
+                "title": args.source_title,
+                "fileId": args.source_id,
+                "modifiedTime": args.source_modified,
+                "viewUrl": args.source_url,
+            },
+        )
         write_book(book)
         print(f"wrote {BOOK_PATH}")
         print(book["summary"])
         return
+
     if args.cmd == "status":
         book = load_book()
         if not book:
             print("missing\tpath=/workspace/wsb-recap/book.json")
             raise SystemExit(2)
         src = book.get("source") or {}
-        print("ok\t" f"title={src.get('title')}\t" f"fileId={src.get('fileId')}\t" f"modifiedTime={src.get('modifiedTime')}\t" f"pulled_at={book.get('pulled_at')}")
+        print(
+            "ok\t"
+            f"title={src.get('title')}\t"
+            f"fileId={src.get('fileId')}\t"
+            f"modifiedTime={src.get('modifiedTime')}\t"
+            f"pulled_at={book.get('pulled_at')}"
+        )
         print(book.get("summary", ""))
         return
+
     if args.cmd == "needs-refresh":
         need = needs_refresh(args.drive_id, args.drive_modified)
         print("needs_refresh" if need else "current")
