@@ -1,0 +1,1 @@
+Installed 2026-09-08 from https://github.com/anthropics/knowledge-work-plugins/tree/main/data/skills/create-viz

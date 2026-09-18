@@ -8,6 +8,11 @@ A cohesive toolkit of AI-powered skills—and their companion app bundles—for 
 
 This repository contains **17 independent skills** designed to streamline software development workflows.
 
+### Grok Bot fleet
+
+- **[bot_fleet](./bot_fleet/)** — Shared, non-personal Grok Bot fleet skills and authored by Dr Eggbot.
+
+
 ### Onboarding & Maintenance
 - **[warmup](./warmup/SKILL.md)** — Codebase onboarding. Explore repo structure, extract Go conventions, and distill them into a Claude-compatible development rule file.
 - **[scout](./scout/SKILL.md)** — Codebase drift detection. Compare git history and Go sources against stored conventions to flag structural changes, convention deviations, and interface modifications.
@@ -250,5 +255,6 @@ Each skill is one directory at the repo root containing `SKILL.md` plus optional
 - `.agents/` — agent wrappers (`bailiff.md`, `inquest.md`) rendered into each vendor's `agents_dir` by the installer
 - `.pkg/` — optional companion applications and distributable bundles attached to specific skill suites; currently includes the Honcho suite's Memboard web UI
 - `.claude/` — harness state and permissions
+- `bot_fleet/` — intentional nested skill pack for the Grok Bot multi-agent fleet (exception to one-skill-per-top-level); documented in [bot_fleet/README.md](./bot_fleet/README.md)
 
-Don't add new non-dot top-level directories unless they're a real skill with a `SKILL.md`.
+Don't add new non-dot top-level directories unless they're a real skill with a `SKILL.md`, or an intentional nested pack documented like `bot_fleet/`.
