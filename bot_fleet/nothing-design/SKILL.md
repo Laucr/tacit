@@ -50,7 +50,7 @@ Per screen, use maximum:
 Think of it as a budget. Every additional size/weight costs visual coherence. Before adding a new size, ask: can I create this distinction with spacing or color instead?
 
 | Decision | Size | Weight | Color |
-|---|:---:|:---:|:---:|
+|----------|:---:|:---:|:---:|
 | Heading vs. body | Yes | No | No |
 | Label vs. value | No | No | Yes |
 | Active vs. inactive nav | No | No | Yes |
