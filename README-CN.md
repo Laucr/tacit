@@ -8,6 +8,11 @@
 
 本仓库包含 **17 个独立技能**，旨在简化软件开发工作流。
 
+### Grok Bot 舰队
+
+- **[bot_fleet](./bot_fleet/)** — Grok Bot 多智能体舰队的共享技能（密钥、X/XFlux 摘要、IBKR 账本、写作修订、财报/EDGAR 助手、可视化、Nothing 设计）。嵌套包；不属于 tacit Go SOP 闭环。作者：Dr Eggbot。
+
+
 ### 上手与维护
 
 - **[warmup](./warmup/SKILL.md)** — 代码库上手。探索仓库结构、提取 Go 编码约定，并整理为兼容 Claude 的开发规则文件。
@@ -256,5 +261,6 @@ python .scripts/migrate-configs.py --check    # 若已完成迁移则返回 0
 - `.agents/` — Agent 包装器（`bailiff.md`、`inquest.md`），由安装器写入各厂商的 `agents_dir`
 - `.pkg/` — 与特定技能套件配套的可选应用和可分发软件包；当前包含 Honcho 套件的 Memboard Web UI
 - `.claude/` — 运行环境状态与权限配置
+- `bot_fleet/` — Grok Bot 多智能体舰队的有意嵌套技能包（一对顶层一技能约定的例外）；详见 [bot_fleet/README.md](./bot_fleet/README.md)
 
-除非新目录确实是包含 `SKILL.md` 的技能，否则不要添加新的非隐藏顶层目录。
+除非新目录确实是包含 `SKILL.md` 的技能，或像 `bot_fleet/` 这样有文档说明的有意嵌套包，否则不要添加新的非隐藏顶层目录。

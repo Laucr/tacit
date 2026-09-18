@@ -8,6 +8,11 @@ A cohesive toolkit of AI-powered skills—and their companion app bundles—for 
 
 This repository contains **17 independent skills** designed to streamline software development workflows.
 
+### Grok Bot fleet
+
+- **[bot_fleet](./bot_fleet/)** — Shared skills for the Grok Bot multi-agent fleet (secrets, X/XFlux digests, IBKR book, writer revision, prints/EDGAR helpers, viz, Nothing design). Nested pack; not part of the tacit Go SOP loop. Authored by Dr Eggbot.
+
+
 ### Onboarding & Maintenance
 - **[warmup](./warmup/SKILL.md)** — Codebase onboarding. Explore repo structure, extract Go conventions, and distill them into a Claude-compatible development rule file.
 - **[scout](./scout/SKILL.md)** — Codebase drift detection. Compare git history and Go sources against stored conventions to flag structural changes, convention deviations, and interface modifications.
@@ -145,14 +150,14 @@ Wire this repo's skills into one or more coding-CLI vendor directories with the 
 bash .scripts/install.sh                                 # interactive first-install / sync
 bash .scripts/install.sh --dry-run                       # preview actions, change nothing
 bash .scripts/install.sh --yes --wired claude --groups core  # non-interactive
-bash .scripts/install.sh --enable-group vec-memory       # add long-term memory skills later
+bash .scripts.install.sh --enable-group vec-memory       # add long-term memory skills later
 bash .scripts/install.sh --check                         # exit 0 if a rerun would be a no-op
 bash .scripts/install.sh --uninstall                     # remove everything and delete config
 ```
 
 By default the installer **symlinks** each skill dir into `<vendor>/skills/`, so `git pull` in this repo propagates skill *content* changes to every wired vendor instantly. Reruns of `install.sh` are for changes to the skill *set* (a skill added/removed upstream) and for re-emitting the policy and agent-wrapper files. Use `--mode copy` on filesystems without symlink support — in copy mode a rerun also updates the skill content itself, so the installed version tracked in `installer.yaml` matters.
 
-`--check` reports what a rerun would change: dangling or missing symlinks in symlink mode; version drift in copy mode; and policy / agent conflicts either way. Exit 0 = in sync (nothing to do), non-zero = a rerun would resolve something.
+`--check` reports what a rerun would change: dangling or missing symlinks in symlink mode; version drift in copy mode; and policy / agent conflicts either way. Exit 0 = in sync (nothing to do); non-zero = a rerun would resolve something.
 
 Alongside skills, the installer copies two kinds of file:
 
@@ -233,7 +238,7 @@ Constraints every new skill must follow if it needs to **persist anything in the
 
 1. **One file per skill, under the unified root.** Write to exactly one path: `~/.config/tacit-skills/<skill-name>.<ext>` (use `.yaml` for structured config, `.json` only if you genuinely need JSON, `.env` for shell-sourced env files). Do **not** invent per-skill subdirectories, and do **not** write into the skill's own directory inside the repo — repo dirs are read-only artifacts that get overwritten on update.
 2. **Never write to `$CWD`, `~/.claude/`, or arbitrary `~/<dotdir>/` locations.** The only sanctioned exception is when a skill wraps a third-party product that owns its own config root (e.g. Honcho's `~/.honcho/`); in that case, document it explicitly in `SKILL.md` and the README's "Configuration" section, and do **not** mirror it under `tacit-skills/`.
-3. **Auto-create with sensible defaults.** On first run, if `~/.config/tacit-skills/<skill>.<ext>` is missing, write it with documented defaults (parent dir created via `mkdir -p`) and tell the user on stderr where it landed. The user must never be left guessing where their config lives.
+3. **Auto-create with sensible defaults.** On first run, if `~/.config/tacit-skills/<skill>.<ext>` is missing, write it with documented defaults (parent dir created via `mkdir -p`) and tell the user on stderr where it landed. The user must never be left guessing where your config lives.
 4. **Keep parsing dependency-free.** Prefer a tiny `key: value` YAML subset parsed with stdlib (see `herald/scripts/render.py:load_config`) over PyYAML; reach for a real YAML parser only if the schema genuinely needs nesting/lists. JSON is fine via `json.stdlib`.
 5. **Provide a migration path when you change the location.** If you rename or move a config file in a later version, register the old → new mapping in `.scripts/migrate-configs.py` (`LEGACY_MAPPINGS`), and add a one-time auto-migration in the skill's own scripts (mirror the `LEGACY_CONFIG_PATH` + `ensure_config()` pattern in `herald/scripts/render.py`). Never silently break existing users.
 6. **Document the path.** Every skill that persists config must mention the exact path in its `SKILL.md` Setup section, and the README's "Configuration / Currently registered" list must be updated in the same change.
@@ -247,8 +252,9 @@ Each skill is one directory at the repo root containing `SKILL.md` plus optional
 
 - `.scripts/` — repo-wide tools (`install.sh`, `release.sh`, `migrate-configs.py`, `test-install.sh`)
 - `.policy/` — policy variants (`core/`, `vec-memory/`) rendered into each vendor's `policy_dir` by the installer
-- `.agents/` — agent wrappers (`bailiff.md`, `inquest.md`) rendered into each vendor's `agents_dir` by the installer
+- `.agents/` — agent wrappers (`bailiff.md`, `inquest.md`) rendered into each vendor's `agents_dir`
 - `.pkg/` — optional companion applications and distributable bundles attached to specific skill suites; currently includes the Honcho suite's Memboard web UI
 - `.claude/` — harness state and permissions
+- `bot_fleet/` — intentional nested skill pack for the Grok Bot multi-agent fleet (exception to one-skill-per-top-level); documented in [bot_fleet/README.md](./bot_fleet/README.md)
 
-Don't add new non-dot top-level directories unless they're a real skill with a `SKILL.md`.
+Don't add new non-dot top-level directories unless they're a real skill with a `SKILL.md`, or an intentional nested pack documented like `bot_fleet/`.
