@@ -16,7 +16,12 @@ Reads **only public SEC EDGAR endpoints**. Prefer this skill for raw, citable ED
 1. **Scope the request.** Subject = US ticker/company, insider (Form 4), or institutional manager (13F). Note form types and date window. Read `references/source_boundary.md`.
 2. **Resolve identifier → CIK.** Map ticker via `https://www.sec.gov/files/company_tickers.json` or EDGAR full-text search. Keep zero-padded 10-digit CIK; label multiple CIKs separately.
 3. **Enumerate recent filings.** Submissions API `https://data.sec.gov/submissions/CIK##########.json`, or full-text search `https://efts.sec.gov/LATEST/search-index` for insider/fund subjects. Filter: `8-K`, `4`, `SC 13D`, `SC 13G`, `13F-HR`, `S-1`, and `/A` amendments.
-4. **Fetch and parse** (see `references/methodology.md`): Form 4, 13F-HR, 8-K, 13D/13G, S-1.
+4. **Fetch and parse** (see `references/methodology.md`):
+   - **Form 4** — owner, relationship, Table I/II rows (code, date, shares, price, A/D, post-txn ownership)
+   - **13F-HR** — holdings table; period end
+   - **8-K** — item numbers + event date
+   - **13D / 13G** — reporting person, % of class, purpose (active vs passive)
+   - **S-1** — registrant, offering type, amount when stated
 5. **Distinguish dates.** Capture both filing/acceptance date and event/period date — never mix them.
 6. **Dedup and supersede.** Key = accession number. `/A` marks `superseded_by` on the original; keep both.
 7. **Emit timeline + dataset** with a factual coverage summary (gaps, rate-limit truncation).
@@ -24,9 +29,9 @@ Reads **only public SEC EDGAR endpoints**. Prefer this skill for raw, citable ED
 
 ## Output Contract
 
-- `filings_dataset.csv` (or `.json`) — one row per filing or Form 4 transaction with accession, form type, filer/owner, CIK, subject issuer, filing date, event/period date, amendment fields, and source URL.
+- `filings_dataset.csv` (or `.json`) — one row per filing or Form 4 transaction with at least: `accession`, `form_type`, `filer`/`reporting_owner`, `cik`, `subject_issuer`, `filing_date`, `event_or_period_date`, `is_amendment`, `superseded_by`, `source_url`, plus form-specific columns.
 - `filing_timeline.md` — chronological entries with accession + EDGAR document URL.
-- Concise factual summary only — no ranking, valuation, or recommendation.
+- Concise factual summary only — **no ranking, valuation, or recommendation.**
 
 ## Data Sources
 
