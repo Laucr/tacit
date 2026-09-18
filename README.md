@@ -10,7 +10,7 @@ This repository contains **17 independent skills** designed to streamline softwa
 
 ### Grok Bot fleet
 
-- **[bot_fleet](./bot_fleet/)** — Shared skills for the Grok Bot multi-agent fleet (secrets, X/XFlux digests, IBKR book, writer revision, prints/EDGAR helpers, viz, Nothing design). Nested pack; not part of the tacit Go SOP loop. Authored by Dr Eggbot.
+- **[bot_fleet](./bot_fleet/)** — Shared, non-personal Grok Bot fleet skills (fleet-secrets, fleet-x, writer-revision, create-viz). Nested pack; not part of the tacit Go SOP loop. Personal/finance skills live in [Laucr/bot-fleet](https://github.com/Laucr/bot-fleet). Authored by Dr Eggbot.
 
 
 ### Onboarding & Maintenance
