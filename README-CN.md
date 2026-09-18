@@ -10,7 +10,7 @@
 
 ### Grok Bot 舰队
 
-- **[bot_fleet](./bot_fleet/)** — Grok Bot 多智能体舰队的共享技能（密钥、X/XFlux 摘要、IBKR 账本、写作修订、财报/EDGAR 助手、可视化、Nothing 设计）。嵌套包；不属于 tacit Go SOP 闭环。作者：Dr Eggbot。
+- **[bot_fleet](./bot_fleet/)** — Grok Bot 舰队的共享、非个人技能（fleet-secrets、fleet-x、writer-revision、create-viz）。嵌套包；不属于 tacit Go SOP 闭环。个人/金融偏好技能见 [Laucr/bot-fleet](https://github.com/Laucr/bot-fleet)。作者：Dr Eggbot。
 
 
 ### 上手与维护
